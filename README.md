@@ -4,34 +4,40 @@ Deploy Apache Guacamole with MySQL on Kubernetes using clean and production-insp
 
 This project demonstrates how to deploy Apache Guacamole in Kubernetes while following common Kubernetes best practices such as Secrets, ConfigMaps, PersistentVolumeClaims, Health Probes and resource management.
 
+> **Note**
+>
+> This project uses the `local-path` StorageClass for PersistentVolumeClaims.
+> Therefore, each component runs with a single replica.
+> A future version of this project will include high-availability deployments with shared storage.
 
-# Features
+## Features
 
-Apache Guacamole 1.6.0
+- Apache Guacamole 1.6.0
 
-MySQL 8.0 backend
+- MySQL 8.0 backend
 
-Kubernetes Deployments
+- Kubernetes Deployments
 
-ClusterIP Services
+- ClusterIP Services
 
-NodePort exposure
+- NodePort exposure
 
-Persistent Volumes
+- Persistent Volumes
 
-Kubernetes Secrets
+- Kubernetes Secrets
 
-ConfigMap-based database initialization
+- ConfigMap-based database initialization
 
-Startup, Readiness and Liveness probes
+- Startup, Readiness and Liveness probes
 
-Resource Requests & Limits
+- Resource Requests & Limits
 
-Init Container for recording directory preparation
+- Init Container for recording directory preparation
 
 
-# Repository Structure
+## Repository Structure
 
+```text
 .
 
 ├── 01-guacamole-secrets.yaml
@@ -55,9 +61,9 @@ Init Container for recording directory preparation
 ├── 10-guacamole-deployment.yaml
 
 └── initdb.sql
+```
 
-
-# Components
+## Components
 
 MySQL 8.0
 
@@ -67,7 +73,7 @@ Database initialization using ConfigMap
 
 Startup/Readiness/Liveness probes
 
-# guacd
+## guacd
 
 The Guacamole proxy daemon responsible for handling RDP, SSH and VNC connections.
 
@@ -83,7 +89,7 @@ Features:
 
 * Health probes
 
-# Guacamole Web Application
+## Guacamole Web Application
 
 The main web application that connects users to destination systems.
 
@@ -99,16 +105,17 @@ Features:
 
 * Resource limits
 
-# Persistent Storage
+## Persistent Storage
 
 This deployment creates two PersistentVolumeClaims:
 
-mysql-data: This pvc is used for MySQL database.
+| PVC | Description |
+|------|-------------|
+| mysql-data | Stores MySQL database files |
+| guacamole-recordings | Stores session recordings |
 
-guacamole-recordings: And this one is for Session recordings
 
-
-# Deployment
+## Deployment
 
 Deploy everything in order:
 
@@ -131,30 +138,37 @@ kubectl apply -f 09-guacamole-service.yaml
 kubectl apply -f 10-guacamole-deployment.yaml
 ```
 
-Verify:
+## Verify Deployment:
+
 ```bash
 kubectl get pods
 kubectl get svc
 kubectl get pvc
 ```
 
-# Access
+## Access
 
 The Guacamole web interface is exposed through a NodePort Service.
 
 Example:
-[http://Node-IP:30085](http://<Node-IP>:30085)
+
+```text
+http://<Node-IP>:30085
+```
 
 
-# Default Credentials
+## Default Credentials
 
 Guacamole initializes the database with the default administrator account:
+
+```text
 Username: guacadmin
 Password: guacadmin
+```
 
 It is strongly recommended to change the password after the first login.
 
-# Learning Goals
+## Learning Goals
 
 This repository was created as part of my Kubernetes learning journey.
 
@@ -168,12 +182,17 @@ The primary objectives were:
 * Resource management
 * Building reusable Kubernetes manifests
 
-# Future Improvements
-* Helm Chart
-* Ingress + TLS
-* External Secrets
-* Cert-Manager
-* Horizontal Pod Autoscaler
-* Network Policies
-* High Availability MySQL
-* GitOps deployment with ArgoCD
+## Future Improvements
+- Helm Chart
+- Kustomize support
+- Ingress + TLS
+- External Secrets
+- Cert-Manager
+- Horizontal Pod Autoscaler
+- Network Policies
+- High Availability MySQL
+- GitOps deployment with ArgoCD
+
+## Screenshots
+### Login Page
+<img width="465" height="451" alt="Screenshot 2026-07-21 232156" src="https://github.com/user-attachments/assets/53a4dc79-855d-45db-8f25-f098d7f32800" />
