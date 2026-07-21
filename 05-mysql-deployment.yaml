@@ -1,0 +1,127 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+  namespace: default
+  labels:
+    app: guacamole-mysql
+
+spec:
+  replicas: 1
+
+  strategy:
+    type: Recreate
+
+  selector:
+    matchLabels:
+      app: guacamole-mysql
+
+  template:
+    metadata:
+      labels:
+        app: guacamole-mysql
+
+    spec:
+      terminationGracePeriodSeconds: 60
+
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: mysql
+              containerPort: 3306
+              protocol: TCP
+
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: guacamole-secrets
+                  key: mysql-root-password
+
+            - name: MYSQL_DATABASE
+              value: guacamole_db
+
+            - name: MYSQL_USER
+              value: guacamole_user
+
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: guacamole-secrets
+                  key: mysql-password
+
+          volumeMounts:
+            - name: mysql-data
+              mountPath: /var/lib/mysql
+
+            - name: guacamole-initdb
+              mountPath: /docker-entrypoint-initdb.d/001-guacamole-initdb.sql
+              subPath: initdb.sql
+              readOnly: true
+
+          startupProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - >
+                  mysqladmin ping
+                  -h 127.0.0.1
+                  -uroot
+                  -p"${MYSQL_ROOT_PASSWORD}"
+                  --silent
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - >
+                  mysqladmin ping
+                  -h 127.0.0.1
+                  -uroot
+                  -p"${MYSQL_ROOT_PASSWORD}"
+                  --silent
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - >
+                  mysqladmin ping
+                  -h 127.0.0.1
+                  -uroot
+                  -p"${MYSQL_ROOT_PASSWORD}"
+                  --silent
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: 250m
+
+            limits:
+              memory: 512Mi
+              cpu: 500m
+
+      volumes:
+        - name: mysql-data
+          persistentVolumeClaim:
+            claimName: mysql-data
+
+        - name: guacamole-initdb
+          configMap:
+            name: guacamole-initdb
+            defaultMode: 0444

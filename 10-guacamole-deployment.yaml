@@ -1,0 +1,116 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: guacamole
+  namespace: default
+  labels:
+    app: guacamole
+
+spec:
+  replicas: 1
+
+  strategy:
+    type: Recreate
+
+  selector:
+    matchLabels:
+      app: guacamole
+
+  template:
+    metadata:
+      labels:
+        app: guacamole
+
+    spec:
+      securityContext:
+        supplementalGroups:
+          - 1000
+
+      terminationGracePeriodSeconds: 30
+
+      containers:
+        - name: guacamole
+          image: guacamole/guacamole:1.6.0
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+
+          env:
+            - name: GUACD_HOSTNAME
+              value: guacd-service
+
+            - name: GUACD_PORT
+              value: "4822"
+
+            - name: MYSQL_HOSTNAME
+              value: mysql-service
+
+            - name: MYSQL_PORT
+              value: "3306"
+
+            - name: MYSQL_DATABASE
+              value: guacamole_db
+
+            - name: MYSQL_USER
+              value: guacamole_user
+
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: guacamole-secrets
+                  key: mysql-password
+
+            - name: WEBAPP_CONTEXT
+              value: ROOT
+
+            - name: RECORDING_ENABLED
+              value: "true"
+
+            - name: RECORDING_SEARCH_PATH
+              value: /var/lib/guacamole/recordings
+
+          volumeMounts:
+            - name: recordings
+              mountPath: /var/lib/guacamole/recordings
+              readOnly: true
+
+          startupProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+
+            limits:
+              cpu: 500m
+              memory: 512Mi
+
+      volumes:
+        - name: recordings
+          persistentVolumeClaim:
+            claimName: guacamole-recordings

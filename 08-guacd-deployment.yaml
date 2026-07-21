@@ -1,0 +1,101 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: guacd
+  namespace: default
+  labels:
+    app: guacd
+
+spec:
+  replicas: 1
+
+  strategy:
+    type: Recreate
+
+  selector:
+    matchLabels:
+      app: guacd
+
+  template:
+    metadata:
+      labels:
+        app: guacd
+
+    spec:
+      terminationGracePeriodSeconds: 30
+
+      initContainers:
+        - name: prepare-recordings-directory
+          image: busybox:1.36
+          imagePullPolicy: IfNotPresent
+
+          command:
+            - sh
+            - -c
+            - |
+              set -eu
+
+              mkdir -p /var/lib/guacamole/recordings
+
+              chown -R 1001:1000 /var/lib/guacamole/recordings
+              chmod -R 2770 /var/lib/guacamole/recordings
+
+              echo "Recording directory:"
+              ls -ld /var/lib/guacamole/recordings
+
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+
+          volumeMounts:
+            - name: recordings
+              mountPath: /var/lib/guacamole/recordings
+
+      containers:
+        - name: guacd
+          image: guacamole/guacd:1.6.0
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: guacd
+              containerPort: 4822
+              protocol: TCP
+
+          volumeMounts:
+            - name: recordings
+              mountPath: /var/lib/guacamole/recordings
+
+          startupProbe:
+            tcpSocket:
+              port: guacd
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 30
+
+          readinessProbe:
+            tcpSocket:
+              port: guacd
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+          livenessProbe:
+            tcpSocket:
+              port: guacd
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: 100m
+
+            limits:
+              memory: 256Mi
+              cpu: 200m
+
+      volumes:
+        - name: recordings
+          persistentVolumeClaim:
+            claimName: guacamole-recordings
