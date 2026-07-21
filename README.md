@@ -168,6 +168,8 @@ Password: guacadmin
 
 It is strongly recommended to change the password after the first login.
 
+For production environments, credentials should be managed using external secret management solutions.
+
 ## Learning Goals
 
 This repository was created as part of my Kubernetes learning journey.
@@ -181,6 +183,16 @@ The primary objectives were:
 * Health checking with Kubernetes probes
 * Resource management
 * Building reusable Kubernetes manifests
+
+## Lessons Learned
+
+During this project I faced several Kubernetes challenges:
+
+- Difference between initContainers and Jobs for database initialization
+- Persistent storage behavior with local-path StorageClass
+- File ownership issues when running containers with non-root users
+- Using readiness and liveness probes correctly
+- Managing application state with PVCs
 
 ## Future Improvements
 - Helm Chart
